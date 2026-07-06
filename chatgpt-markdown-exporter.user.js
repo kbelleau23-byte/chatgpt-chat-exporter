@@ -179,7 +179,7 @@
 
             const clone = element.cloneNode(true);
             queryAll(clone, 'br').forEach(br => br.replaceWith(clone.ownerDocument.createTextNode('\n')));
-            return collectTextWithBreaks(clone).replace(/\u00a0/g, ' ');
+            return collectTextWithBreaks(clone).replace(/\u00a0/g, ' ').replace(/\n{3,}/g, '\n\n').trimEnd();
         }
 
         function normalizeCodeText(value) {
