@@ -166,16 +166,20 @@
             return before + Array.from(node.childNodes).map(collectTextWithBreaks).join('') + after;
         }
 
+        function isPreWrapElement(element) {
+            if (!element || element.nodeType !== 1) return false;
+            const className = getClassName(element);
+            if (className.includes('whitespace-pre-wrap')) return true;
+            const style = element.getAttribute('style') || '';
+            return /white-space\s*:\s*pre-wrap/.test(style);
+        }
+
         function getCodeText(element) {
             if (!element) return '';
 
-            if (typeof element.innerText === 'string' && element.innerText.trim()) {
-                return element.innerText.replace(/\u00a0/g, ' ').replace(/\n{3,}/g, '\n\n').trimEnd();
-            }
-
             const clone = element.cloneNode(true);
             queryAll(clone, 'br').forEach(br => br.replaceWith(clone.ownerDocument.createTextNode('\n')));
-            return collectTextWithBreaks(clone).replace(/\n{3,}/g, '\n\n').trimEnd();
+            return collectTextWithBreaks(clone).replace(/\u00a0/g, ' ');
         }
 
         function normalizeCodeText(value) {
@@ -338,7 +342,7 @@
                 if (cmLines.length > 0) {
                     return {
                         lang: language,
-                        code: normalizeCodeText(cmLines.map(line => line.textContent || '').join('\n'))
+                        code: normalizeCodeText(cmLines.map(line => collectTextWithBreaks(line)).join(''))
                     };
                 }
 
@@ -628,10 +632,13 @@
 
             if (tag === 'code') {
                 const content = getCodeText(node)
-                    .replace(/\\/g, '\\\\')
                     .replace(/`/g, '\\`')
                     .trim();
                 return content ? `\`${content}\`` : '';
+            }
+
+            if (isPreWrapElement(node)) {
+                return collectTextWithBreaks(node).replace(/\u00a0/g, ' ');
             }
 
             const content = serializeMarkdownChildren(node, context);
